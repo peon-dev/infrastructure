@@ -1,0 +1,129 @@
+version: "3.7"
+
+networks:
+    traefik:
+        external: true
+    internal:
+        external: false
+
+volumes:
+    unit-state:
+    postgres-data:
+    caddy_data:
+    caddy_config:
+
+x-php-common-variables: &php-common-variables
+    DATABASE_URL: "postgresql://__PEON_POSTGRES_USER__:__PEON_POSTGRES_PASSWORD__@postgres:5432/__PEON_POSTGRES_DBNAME__?serverVersion=13&charset=utf8"
+    MERCURE_JWT_SECRET: '__PEON__MERCURE_JWT_SECRET__'
+    SENTRY_DSN: "__PEON_SENTRY_DSN__"
+
+services:
+    # Helper service to run database migrations
+    db-migrations:
+        image: ghcr.io/peon-dev/peon:main
+        environment:
+            <<: *php-common-variables
+        depends_on:
+            - postgres
+        command: "bash -c 'wait-for-it postgres:5432 -- sleep 3 && bin/console doctrine:migrations:migrate --no-interaction'"
+        networks:
+            - internal
+
+    mercure:
+        image: dunglas/mercure
+        restart: unless-stopped
+        environment:
+            SERVER_NAME: ':80'
+            MERCURE_PUBLISHER_JWT_KEY: '__PEON__MERCURE_JWT_SECRET__'
+            MERCURE_SUBSCRIBER_JWT_KEY: '__PEON__MERCURE_JWT_SECRET__'
+        volumes:
+            - caddy_data:/data
+            - caddy_config:/config
+        expose:
+            - "80"
+        command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.peon-mercure.rule=Host(`app.peon.dev`) && PathPrefix(`/.well-known/mercure`)"
+            - "traefik.http.routers.peon-mercure.tls=true"
+            - "traefik.http.routers.peon-mercure.tls.certresolver=le"
+        networks:
+            - traefik
+            - internal
+
+    dashboard:
+        image: ghcr.io/peon-dev/peon:main
+        depends_on:
+            - db-migrations
+            - postgres
+            - mercure
+        restart: unless-stopped
+        environment:
+            <<: *php-common-variables
+            MERCURE_PUBLIC_URL: "https://app.peon.dev/.well-known/mercure"
+        volumes:
+            - unit-state:/var/lib/unit/state
+        expose:
+            - "8080"
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.peon-dashboard.rule=Host(`app.peon.dev`)"
+            - "traefik.http.routers.peon-dashboard.tls=true"
+            - "traefik.http.routers.peon-dashboard.tls.certresolver=le"
+        networks:
+            - traefik
+            - internal
+
+    worker:
+        image: ghcr.io/peon-dev/peon:main
+        depends_on:
+            - db-migrations
+        environment:
+            <<: *php-common-variables
+            HOST_WORKING_DIRECTORIES_PATH: $PWD/working_directories
+        restart: unless-stopped
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - $PWD/working_directories:/peon/var/working_directories
+        command: "bash -c 'wait-for-it postgres:5432 -- sleep 6 && bin/worker'"
+        networks:
+            - internal
+
+    scheduler:
+        image: ghcr.io/peon-dev/peon:main
+        depends_on:
+            - db-migrations
+        environment:
+            <<: *php-common-variables
+        restart: unless-stopped
+        command: "bash -c 'wait-for-it postgres:5432 -- sleep 6 && bin/scheduler'"
+        networks:
+            - internal
+
+    postgres:
+        image: postgres:13
+        environment:
+            POSTGRES_DB: __PEON_POSTGRES_DBNAME__
+            POSTGRES_USER: __PEON_POSTGRES_USER__
+            POSTGRES_PASSWORD: __PEON_POSTGRES_PASSWORD__
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        networks:
+            - internal
+
+    adminer:
+        image: adminer:4.8.1
+        expose:
+            - "8080"
+        environment:
+            ADMINER_DEFAULT_SERVER: postgres
+        depends_on:
+            - postgres
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.peon-adminer.rule=Host(`db-adminer.peon.dev`)"
+            - "traefik.http.routers.peon-adminer.tls=true"
+            - "traefik.http.routers.peon-adminer.tls.certresolver=le"
+        networks:
+            - traefik
+            - internal
