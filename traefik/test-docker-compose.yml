@@ -1,0 +1,42 @@
+version: '3'
+
+networks:
+    traefik:
+        external: true
+
+services:
+  reverse-proxy:
+    image: traefik:2.8
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.web-secure.address=:443
+      - --entrypoints.web.http.redirections.entryPoint.to=web-secure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --providers.docker
+      - --providers.docker.network=traefik
+      - --providers.docker.exposedByDefault=false
+      - --api
+      - --api.dashboard=true
+      - --certificatesresolvers.le.acme.email=__TRAEFIK_ACME_EMAIL__
+      - --certificatesresolvers.le.acme.storage=/acme.json
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesResolvers.le.acme.httpChallenge=true
+      - --certificatesResolvers.le.acme.httpChallenge.entryPoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./acme.json:/acme.json
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.peon.dev`)"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.tls.certResolver=le"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=__TRAEFIK_BASICAUTH__"
+    networks:
+      - traefik
