@@ -14,7 +14,7 @@ volumes:
 
 x-php-common-variables: &php-common-variables
     DATABASE_URL: "postgresql://__PEON_POSTGRES_USER__:__PEON_POSTGRES_PASSWORD__@postgres:5432/__PEON_POSTGRES_DBNAME__?serverVersion=13&charset=utf8"
-    MERCURE_JWT_SECRET: '__PEON__MERCURE_JWT_SECRET__'
+    MERCURE_JWT_SECRET: '__PEON_MERCURE_JWT_SECRET__'
     SENTRY_DSN: "__PEON_SENTRY_DSN__"
 
 services:
@@ -34,8 +34,8 @@ services:
         restart: unless-stopped
         environment:
             SERVER_NAME: ':80'
-            MERCURE_PUBLISHER_JWT_KEY: '__PEON__MERCURE_JWT_SECRET__'
-            MERCURE_SUBSCRIBER_JWT_KEY: '__PEON__MERCURE_JWT_SECRET__'
+            MERCURE_PUBLISHER_JWT_KEY: '__PEON_MERCURE_JWT_SECRET__'
+            MERCURE_SUBSCRIBER_JWT_KEY: '__PEON_MERCURE_JWT_SECRET__'
         volumes:
             - caddy_data:/data
             - caddy_config:/config
@@ -121,7 +121,7 @@ services:
             - postgres
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.peon-adminer.rule=Host(`db-adminer.peon.dev`)"
+            - "traefik.http.routers.peon-adminer.rule=Host(`__PEON_ADMINER_HOST__`)"
             - "traefik.http.routers.peon-adminer.tls=true"
             - "traefik.http.routers.peon-adminer.tls.certresolver=le"
         networks:
