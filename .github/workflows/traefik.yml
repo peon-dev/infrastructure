@@ -1,0 +1,21 @@
+name: Traefik
+
+on:
+    push:
+        branches:
+            - 'main'
+        paths:
+            - 'traefik/**'
+            - '.github/workflows/traefik.yml'
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v2
+
+    # TODO: sed
+    # TODO: copy sed files
+    # TODO: run docker-compose up -d
+    # TODO: deployment job
