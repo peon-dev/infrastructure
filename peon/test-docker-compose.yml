@@ -41,7 +41,7 @@ services:
             - caddy_config:/config
         expose:
             - "80"
-        command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev
+        command: /usr/bin/caddy run --config /etc/caddy/Caddyfile.dev
         labels:
             - "traefik.enable=true"
             - "traefik.http.routers.peon-mercure.rule=Host(`app.peon.dev`) && PathPrefix(`/.well-known/mercure`)"
