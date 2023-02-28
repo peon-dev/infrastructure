@@ -44,7 +44,7 @@ services:
         command: /usr/bin/caddy run --config /etc/caddy/Caddyfile.dev
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.peon-mercure.rule=Host(`app.peon.dev`) && PathPrefix(`/.well-known/mercure`)"
+            - "traefik.http.routers.peon-mercure.rule=Host(`__PEON_HOST__`) && PathPrefix(`/.well-known/mercure`)"
             - "traefik.http.routers.peon-mercure.tls=true"
             - "traefik.http.routers.peon-mercure.tls.certresolver=le"
         networks:
@@ -60,14 +60,14 @@ services:
         restart: unless-stopped
         environment:
             <<: *php-common-variables
-            MERCURE_PUBLIC_URL: "https://app.peon.dev/.well-known/mercure"
+            MERCURE_PUBLIC_URL: "https://__PEON_HOST__/.well-known/mercure"
         volumes:
             - unit-state:/var/lib/unit/state
         expose:
             - "8080"
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.peon-dashboard.rule=Host(`app.peon.dev`)"
+            - "traefik.http.routers.peon-dashboard.rule=Host(`__PEON_HOST__`)"
             - "traefik.http.routers.peon-dashboard.tls=true"
             - "traefik.http.routers.peon-dashboard.tls.certresolver=le"
         networks:

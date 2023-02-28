@@ -32,7 +32,7 @@ services:
             - ./acme.json:/acme.json
         labels:
             - "traefik.enable=true"
-            - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.peon.dev`)"
+            - "traefik.http.routers.traefik-dashboard.rule=Host(`__TRAEFIK_HOST__`)"
             - "traefik.http.routers.traefik-dashboard.tls=true"
             - "traefik.http.routers.traefik-dashboard.tls.certResolver=le"
             - "traefik.http.routers.traefik-dashboard.service=api@internal"
