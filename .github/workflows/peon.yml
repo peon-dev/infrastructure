@@ -9,13 +9,39 @@ on:
             - '.github/workflows/peon.yml'
 
 jobs:
-    release:
+    deploy:
         runs-on: ubuntu-latest
+        environment:
+            name: prod
+            url: https://peon.peon.dev
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
 
-    # TODO: sed
-    # TODO: copy sed files
-    # TODO: run docker-compose up -d
-    # TODO: deployment job
+            # Iterate over secrets as JSON and replace possible placeholders
+            # Save output to the file to be processed
+            -   name: Replace placeholders
+                run: echo $SECRETS | jq --raw-output 'keys[]' | while read -r secretKey; do cat peon/docker-compose.yml | sed "s#__${secretKey}__#$(echo $SECRETS | jq --raw-output .${secretKey} | tr -d '\n\t')#" > peon/docker-compose.yml; done
+                env:
+                    SECRETS: ${{ toJson(secrets) }}
+
+            -   name: Rsync Docker files
+                uses: burnett01/rsync-deployments@5.2
+                with:
+                    switches: -azvr
+                    path: ./peon/
+                    remote_path: /app/peon
+                    remote_host: ${{ secrets.DEPLOY_HOST }}
+                    remote_user: ${{ secrets.DEPLOY_USERNAME }}
+                    remote_key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+
+            -   uses: appleboy/ssh-action@master
+                with:
+                    host: ${{ secrets.DEPLOY_HOST }}
+                    username: ${{ secrets.DEPLOY_USERNAME }}
+                    key: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+                    script_stop: true
+                    script: |
+                        cd /app/peon
+                        docker-compose pull
+                        docker-compose up -d
