@@ -13,7 +13,7 @@ jobs:
         runs-on: ubuntu-latest
         environment:
             name: prod
-            url: https://peon.peon.dev
+            url: https://app.peon.dev
         steps:
             -   name: Checkout
                 uses: actions/checkout@v2
