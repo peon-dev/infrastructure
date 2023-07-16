@@ -9,5 +9,5 @@ LOGS_START=$(expr $(date +%s))
 
 # Do not restart other services (Postgres, Mercure)
 # It they were not running, they will start automatically thanks to `depends_on`
-docker compose up --detach dashboard worker scheduler
+docker compose up --detach --force-recreate dashboard worker scheduler
 docker compose logs --since $LOGS_START dashboard worker scheduler
