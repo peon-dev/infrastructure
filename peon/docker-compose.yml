@@ -86,6 +86,7 @@ services:
             - /var/run/docker.sock:/var/run/docker.sock
             - $PWD/working_directories:/peon/var/working_directories
         command: "bash -c 'wait-for-it postgres:5432 -- sleep 6 && bin/worker'"
+        user: "root"
         networks:
             - internal
 
