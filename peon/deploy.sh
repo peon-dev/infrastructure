@@ -2,7 +2,10 @@
 
 set -e
 
-docker pull ghcr.io/peon-dev/php:main
+# Peon app
+docker pull ghcr.io/peon-dev/peon:main
+
+# Recipes
 docker pull ghcr.io/peon-dev/php-recipes:main
 
 LOGS_START=$(expr $(date +%s))
