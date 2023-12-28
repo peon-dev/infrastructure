@@ -43,5 +43,5 @@ jobs:
                     script_stop: true
                     script: |
                         cd /app/traefik
-                        docker-compose pull
-                        docker-compose up -d
+                        docker compose pull
+                        docker compose up -d
